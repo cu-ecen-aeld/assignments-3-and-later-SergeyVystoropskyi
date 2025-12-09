@@ -1,0 +1,67 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          aesdsocket
+# Required-Start:    $network
+# Required-Stop:     $network
+# Short-Description: Start/stop aesdsocket server daemon
+### END INIT INFO
+
+# Determine absolute path of this script and the aesdsocket binary
+DAEMON_PATH="$(cd "$(dirname "$0")" && pwd)"
+DAEMON="$DAEMON_PATH/aesdsocket"
+DAEMON_OPTS="-d"
+PIDFILE="/var/run/aesdsocket.pid"
+NAME="aesdsocket"
+
+case "$1" in
+    start)
+        echo "Starting $NAME"
+        start-stop-daemon --start \
+            --background \
+            --make-pidfile \
+            --pidfile "$PIDFILE" \
+            --exec "$DAEMON" -- $DAEMON_OPTS
+        ;;
+
+    stop)
+        echo "Stopping $NAME"
+        if [ -f "$PIDFILE" ]; then
+            start-stop-daemon --stop \
+                --pidfile "$PIDFILE" \
+                --retry TERM/5
+            rm -f "$PIDFILE"
+        else
+            echo "$NAME not running (no PID file)"
+        fi
+        ;;
+
+    restart)
+        $0 stop
+        sleep 1
+        $0 start
+        ;;
+
+    status)
+        if [ -f "$PIDFILE" ]; then
+            PID=$(cat "$PIDFILE")
+            if kill -0 "$PID" 2>/dev/null; then
+                echo "$NAME running with PID $PID"
+                exit 0
+            else
+                echo "$NAME PID file exists but process not running"
+                exit 1
+            fi
+        else
+            echo "$NAME not running"
+            exit 1
+        fi
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
+
